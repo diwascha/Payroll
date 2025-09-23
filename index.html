@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NovaHR | Unified HRMS Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0,0"
+    />
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="sidebar__header">
+          <div class="brand">
+            <span class="brand__mark">N</span>
+            <div>
+              <p class="brand__title">NovaHR</p>
+              <p class="brand__subtitle">People OS</p>
+            </div>
+          </div>
+          <button class="sidebar__collapse" aria-label="Collapse navigation">
+            <span class="icon icon--chevron"></span>
+          </button>
+        </div>
+        <div class="sidebar__body">
+          <div class="sidebar__group sidebar__group--label">Core Suite</div>
+          <nav class="sidebar__nav">
+            <button class="nav-item active" data-view="dashboard">
+              <span class="icon icon--grid"></span>
+              <span>Executive Overview</span>
+            </button>
+            <button class="nav-item" data-view="employees">
+              <span class="icon icon--users"></span>
+              <span>Workforce</span>
+            </button>
+            <button class="nav-item" data-view="payroll">
+              <span class="icon icon--wallet"></span>
+              <span>Payroll</span>
+            </button>
+            <button class="nav-item" data-view="attendance">
+              <span class="icon icon--calendar"></span>
+              <span>Time & Presence</span>
+            </button>
+            <button class="nav-item" data-view="performance">
+              <span class="icon icon--target"></span>
+              <span>Performance</span>
+            </button>
+            <button class="nav-item" data-view="settings">
+              <span class="icon icon--settings"></span>
+              <span>Control Center</span>
+            </button>
+          </nav>
+          <div class="sidebar__group sidebar__group--label">Automations</div>
+          <div class="sidebar__tags">
+            <button class="tag">Onboarding Journeys</button>
+            <button class="tag">Compensation Cycles</button>
+            <button class="tag">Compliance Alerts</button>
+          </div>
+        </div>
+        <div class="sidebar__footer">
+          <div class="plan-card">
+            <div class="plan-card__status">
+              <span class="plan-card__pulse"></span>
+              <span>Enterprise Plan</span>
+            </div>
+            <p class="plan-card__usage">85% seats utilised</p>
+            <div class="plan-card__progress">
+              <div class="plan-card__progress-bar"></div>
+            </div>
+            <button class="plan-card__cta">Upgrade Workflows</button>
+          </div>
+        </div>
+      </aside>
+
+      <div class="workspace">
+        <header class="workspace__header">
+          <div class="workspace__title">
+            <h1 data-section-title>Executive Overview</h1>
+            <p class="workspace__subtitle">
+              Command center for your HR operations, workforce health, payroll, and
+              compliance insights.
+            </p>
+          </div>
+          <div class="workspace__actions">
+            <div class="search-field">
+              <span class="icon icon--search"></span>
+              <input type="search" placeholder="Search employee, policy, workflow..." />
+            </div>
+            <button class="workspace__button workspace__button--ghost">
+              <span class="icon icon--spark"></span>
+              Command Palette
+            </button>
+            <button class="workspace__button workspace__button--primary">
+              <span class="icon icon--plus"></span>
+              Create Workflow
+            </button>
+            <div class="avatar-stack">
+              <span class="icon icon--bell"></span>
+              <div class="avatar">
+                <img src="https://i.pravatar.cc/100?img=58" alt="Operations" />
+              </div>
+            </div>
+          </div>
+        </header>
+        <main class="workspace__body">
+          <section id="view-container" class="view-container"></section>
+        </main>
+      </div>
+    </div>
+
+    <div class="floating-insight" id="floating-insight">
+      <div class="floating-insight__header">
+        <span class="icon icon--spark"></span>
+        Predictive Insight
+      </div>
+      <p class="floating-insight__body">
+        Flight risk for Product Design squad increased by 12% this month. Trigger retention playbook?
+      </p>
+      <div class="floating-insight__actions">
+        <button class="workspace__button workspace__button--ghost">View Signal</button>
+        <button class="workspace__button workspace__button--primary">Launch Playbook</button>
+      </div>
+      <button class="floating-insight__close" aria-label="Dismiss insight">&times;</button>
+    </div>
+
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>
