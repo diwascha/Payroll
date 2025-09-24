@@ -38,6 +38,8 @@ const selectors = {
     table: document.querySelector('#attendance-table tbody'),
     queryForm: document.getElementById('attendance-query'),
     month: document.getElementById('attendance-query-month'),
+    importForm: document.getElementById('attendance-import'),
+    importFile: document.getElementById('attendance-import-file'),
   },
   payroll: {
     employee: document.getElementById('payroll-employee'),
@@ -518,7 +520,9 @@ async function submitAttendance(event) {
 }
 
 async function queryAttendance(event) {
-  event.preventDefault();
+  if (event && typeof event.preventDefault === 'function') {
+    event.preventDefault();
+  }
   const employeeId = document.getElementById('attendance-query-employee').value;
   const monthValue = selectors.attendance.month.value;
   if (!employeeId || !monthValue) {
@@ -561,6 +565,57 @@ function renderAttendanceTable(records) {
     `;
     selectors.attendance.table.appendChild(row);
   });
+}
+
+async function importAttendanceFile(event) {
+  event.preventDefault();
+  const input = selectors.attendance.importFile;
+  if (!input || !input.files || !input.files.length) {
+    notify('Select an Excel workbook to import', 'error');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('file', input.files[0]);
+
+  try {
+    const result = await apiFetch('/attendance/import', { method: 'POST', body: formData });
+    const created = Number(result.created || 0);
+    const updated = Number(result.updated || 0);
+    const summaryParts = [];
+    if (created) summaryParts.push(`${created} new`);
+    if (updated) summaryParts.push(`${updated} updated`);
+    const summaryMessage = summaryParts.length ? summaryParts.join(' and ') : 'no changes';
+    notify(`Attendance import complete: ${summaryMessage}.`);
+
+    const skippedInvalid = Number(result.skippedInvalid || 0);
+    if (skippedInvalid) {
+      notify(`${skippedInvalid} rows were skipped due to missing dates or time values.`, 'error');
+    }
+
+    const missingCount = Number(result.skippedMissingEmployee || 0);
+    if (missingCount) {
+      const missingList = Array.isArray(result.missingEmployees) ? result.missingEmployees : [];
+      const preview = missingList.slice(0, 3).join(', ');
+      const remainder = missingList.length > 3 ? `, +${missingList.length - 3} more` : '';
+      const suffix = preview ? ` (${preview}${remainder})` : '';
+      notify(`Skipped ${missingCount} rows with unmatched employees${suffix}.`, 'error');
+    }
+
+    if (selectors.attendance.importForm) {
+      selectors.attendance.importForm.reset();
+    }
+    state.attendanceCache.clear();
+    await refreshDashboard();
+
+    const selectedEmployee = document.getElementById('attendance-query-employee').value;
+    const selectedMonth = selectors.attendance.month.value;
+    if (selectedEmployee && selectedMonth) {
+      await queryAttendance();
+    }
+  } catch (error) {
+    notify(error.message, 'error');
+  }
 }
 
 async function renderPayrollSummary() {
@@ -708,6 +763,9 @@ function bindEvents() {
 
   selectors.attendance.form.addEventListener('submit', submitAttendance);
   selectors.attendance.queryForm.addEventListener('submit', queryAttendance);
+  if (selectors.attendance.importForm) {
+    selectors.attendance.importForm.addEventListener('submit', importAttendanceFile);
+  }
 
   selectors.payroll.employee.addEventListener('change', renderPayrollSummary);
   selectors.payroll.download.addEventListener('click', downloadPayslip);

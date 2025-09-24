@@ -282,6 +282,13 @@ textarea {
   gap: 0.75rem;
 }
 
+.form-hint {
+  font-size: 0.85rem;
+  color: var(--color-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;

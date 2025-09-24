@@ -3,12 +3,12 @@ from __future__ import annotations
 import csv
 import io
 import json
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
 from threading import Lock
 from typing import Dict, List, Tuple
 
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import FastAPI, File, HTTPException, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 
 DATA_PATH = Path('data/storage.json')
 DATA_PATH.parent.mkdir(exist_ok=True)
@@ -183,6 +183,226 @@ class AttendancePayload(BaseModel):
 
 store = DataStore(DATA_PATH)
 app = FastAPI(title='NovaHRMS API', version='1.0.0')
+
+
+EXCEL_DATE_EPOCH = datetime(1899, 12, 30)
+
+HEADER_ALIASES = {
+    'name': 'name',
+    'employee': 'name',
+    'employeename': 'name',
+    'staffname': 'name',
+    'employeeid': 'employeeId',
+    'empid': 'employeeId',
+    'employeecode': 'employeeId',
+    'empcode': 'employeeId',
+    'code': 'employeeId',
+    'id': 'employeeId',
+    'date': 'date',
+    'attendancedate': 'date',
+    'workdate': 'date',
+    'checkin': 'clockIn',
+    'clockin': 'clockIn',
+    'signin': 'clockIn',
+    'intime': 'clockIn',
+    'checkintime': 'clockIn',
+    'clockout': 'clockOut',
+    'checkout': 'clockOut',
+    'signout': 'clockOut',
+    'outtime': 'clockOut',
+    'checkouttime': 'clockOut',
+    'onduty': 'onDuty',
+    'offduty': 'offDuty',
+    'absent': 'absent',
+    'status': 'status',
+}
+
+ABSENT_MARKERS = {'true', 'yes', 'y', '1', 'absent', 'a', 'leave'}
+
+
+def _normalize_text(value) -> str:
+    return ' '.join(str(value or '').strip().split())
+
+
+def _normalize_name(value) -> str:
+    return _normalize_text(value).lower()
+
+
+def _header_key(value) -> str:
+    return ''.join(ch.lower() for ch in str(value or '') if ch.isalnum())
+
+
+def _resolve_header(value) -> str | None:
+    key = _header_key(value)
+    return HEADER_ALIASES.get(key)
+
+
+def _parse_excel_bool(value) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    if isinstance(value, (int, float)):
+        return bool(value)
+    text = str(value).strip().lower()
+    if not text:
+        return False
+    return text in ABSENT_MARKERS
+
+
+def _parse_excel_date(value):
+    if value is None or value == '':
+        return None
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    if isinstance(value, (int, float)):
+        try:
+            return (EXCEL_DATE_EPOCH + timedelta(days=float(value))).date()
+        except Exception:
+            return None
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        try:
+            return datetime.fromisoformat(text).date()
+        except ValueError:
+            pass
+        if ' ' in text:
+            prefix = text.split(' ')[0]
+            try:
+                return date.fromisoformat(prefix)
+            except ValueError:
+                pass
+        for fmt in ('%Y-%m-%d', '%d-%m-%Y', '%d/%m/%Y', '%Y/%m/%d'):
+            try:
+                return datetime.strptime(text, fmt).date()
+            except ValueError:
+                continue
+    return None
+
+
+def _parse_excel_time(value):
+    if value is None or value == '':
+        return None
+    if isinstance(value, datetime):
+        return value.time().replace(microsecond=0)
+    if isinstance(value, time):
+        return value.replace(microsecond=0)
+    if isinstance(value, (int, float)):
+        try:
+            total_seconds = int(round(float(value) * 86400))
+        except Exception:
+            return None
+        hours, remainder = divmod(total_seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        hours %= 24
+        return time(hour=hours, minute=minutes, second=seconds)
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        candidate = text.upper().replace('.', ':')
+        for fmt in ('%H:%M:%S', '%H:%M', '%I:%M %p', '%I:%M%p'):
+            try:
+                return datetime.strptime(candidate, fmt).time().replace(microsecond=0)
+            except ValueError:
+                continue
+        try:
+            return datetime.fromisoformat(text).time()
+        except ValueError:
+            return None
+    return None
+
+
+def _format_time(value: time) -> str:
+    return value.strftime('%H:%M') if value else ''
+
+
+def _hours_between(work_date: date, start: time, end: time) -> float:
+    start_dt = datetime.combine(work_date, start)
+    end_dt = datetime.combine(work_date, end)
+    if end_dt < start_dt:
+        end_dt += timedelta(days=1)
+    return (end_dt - start_dt).total_seconds() / 3600
+
+
+def _extract_attendance_rows(workbook) -> List[Dict]:
+    rows: List[Dict] = []
+    for sheet in workbook.worksheets:
+        header_row = next(sheet.iter_rows(min_row=1, max_row=1, values_only=True), None)
+        if not header_row:
+            continue
+        column_map: Dict[str, int] = {}
+        for idx, value in enumerate(header_row):
+            if value is None:
+                continue
+            resolved = _resolve_header(value)
+            if resolved and resolved not in column_map:
+                column_map[resolved] = idx
+        if 'date' not in column_map or ('name' not in column_map and 'employeeId' not in column_map):
+            continue
+
+        for row in sheet.iter_rows(min_row=2, values_only=True):
+            if not row:
+                continue
+            if all(value is None or (isinstance(value, str) and not value.strip()) for value in row):
+                continue
+
+            raw_name = ''
+            if 'name' in column_map and column_map['name'] < len(row):
+                name_value = row[column_map['name']]
+                raw_name = _normalize_text(name_value) if name_value is not None else ''
+                if _header_key(raw_name) == 'name':
+                    continue
+                if raw_name.lower() in {'total', 'grand total'}:
+                    continue
+            employee_identifier = ''
+            if 'employeeId' in column_map and column_map['employeeId'] < len(row):
+                emp_value = row[column_map['employeeId']]
+                employee_identifier = _normalize_text(emp_value)
+            date_value = row[column_map['date']] if column_map['date'] < len(row) else None
+            parsed_date = _parse_excel_date(date_value)
+            if not raw_name and not employee_identifier and parsed_date is None:
+                continue
+
+            record = {
+                'name': raw_name,
+                'employeeId': employee_identifier,
+                'date': parsed_date,
+                'checkIn': None,
+                'checkOut': None,
+                'onDuty': None,
+                'offDuty': None,
+                'absent': False,
+            }
+
+            if 'clockIn' in column_map and column_map['clockIn'] < len(row):
+                record['checkIn'] = _parse_excel_time(row[column_map['clockIn']])
+            if 'clockOut' in column_map and column_map['clockOut'] < len(row):
+                record['checkOut'] = _parse_excel_time(row[column_map['clockOut']])
+            if 'onDuty' in column_map and column_map['onDuty'] < len(row):
+                record['onDuty'] = _parse_excel_time(row[column_map['onDuty']])
+            if 'offDuty' in column_map and column_map['offDuty'] < len(row):
+                record['offDuty'] = _parse_excel_time(row[column_map['offDuty']])
+            absent_value = None
+            if 'absent' in column_map and column_map['absent'] < len(row):
+                absent_value = row[column_map['absent']]
+            status_value = None
+            if 'status' in column_map and column_map['status'] < len(row):
+                status_value = row[column_map['status']]
+
+            record['absent'] = _parse_excel_bool(absent_value)
+            if not record['absent'] and status_value is not None:
+                status_text = str(status_value).strip().lower()
+                if status_text in {'a', 'absent', 'leave'}:
+                    record['absent'] = True
+
+            rows.append(record)
+
+    return rows
 
 app.add_middleware(
     CORSMiddleware,
@@ -421,6 +641,110 @@ def record_attendance(payload: AttendancePayload):
 
     store.update(_record)
     return {'status': 'ok'}
+
+
+@app.post('/api/attendance/import')
+async def import_attendance(file: UploadFile = File(...)):
+    contents = await file.read()
+    if not contents:
+        raise HTTPException(status_code=400, detail='Uploaded file is empty')
+
+    try:
+        workbook = load_workbook(filename=io.BytesIO(contents), data_only=True)
+    except Exception as exc:  # pragma: no cover - defensive parsing
+        raise HTTPException(status_code=400, detail='Unable to read Excel workbook') from exc
+
+    rows = _extract_attendance_rows(workbook)
+    if not rows:
+        raise HTTPException(status_code=400, detail='No attendance data found in workbook')
+
+    summary = {
+        'created': 0,
+        'updated': 0,
+        'skippedMissingEmployee': 0,
+        'skippedInvalid': 0,
+    }
+    missing_employees: set[str] = set()
+
+    def _import(data: Dict):
+        employees_by_id = {emp['employeeId'].lower(): emp for emp in data['employees']}
+        employees_by_name = {
+            _normalize_name(f"{emp['firstName']} {emp['lastName']}"): emp for emp in data['employees']
+        }
+        index = {(record['employeeId'], record['date']): record for record in data['attendance']}
+        processed_in_batch: set[tuple[str, str]] = set()
+
+        for row in rows:
+            work_date = row.get('date')
+            if not isinstance(work_date, date):
+                summary['skippedInvalid'] += 1
+                continue
+
+            identifier = row.get('employeeId')
+            employee = None
+            if isinstance(identifier, str):
+                identifier_key = identifier.strip().lower()
+                if identifier_key:
+                    employee = employees_by_id.get(identifier_key)
+            elif identifier:
+                employee = employees_by_id.get(str(identifier).strip().lower())
+
+            if employee is None:
+                name_key = _normalize_name(row.get('name', ''))
+                if name_key:
+                    employee = employees_by_name.get(name_key)
+
+            if employee is None:
+                summary['skippedMissingEmployee'] += 1
+                label = row.get('employeeId') or row.get('name')
+                if label:
+                    missing_employees.add(str(label))
+                continue
+
+            absent = bool(row.get('absent'))
+            check_in_time = row.get('checkIn') or (None if absent else row.get('onDuty'))
+            check_out_time = row.get('checkOut') or (None if absent else row.get('offDuty'))
+
+            if absent:
+                payload = {'checkIn': 'Absent', 'checkOut': 'Absent', 'hoursWorked': 0.0}
+            else:
+                if not (check_in_time and check_out_time):
+                    summary['skippedInvalid'] += 1
+                    continue
+                hours_worked = round(_hours_between(work_date, check_in_time, check_out_time), 2)
+                payload = {
+                    'checkIn': _format_time(check_in_time),
+                    'checkOut': _format_time(check_out_time),
+                    'hoursWorked': hours_worked,
+                }
+
+            key = (employee['employeeId'], work_date.isoformat())
+            if key in processed_in_batch:
+                index[key].update(payload)
+                continue
+
+            processed_in_batch.add(key)
+
+            if key in index:
+                index[key].update(payload)
+                summary['updated'] += 1
+            else:
+                record = {
+                    'employeeId': employee['employeeId'],
+                    'date': work_date.isoformat(),
+                    **payload,
+                }
+                data['attendance'].append(record)
+                index[key] = record
+                summary['created'] += 1
+
+    store.update(_import)
+
+    return {
+        'status': 'ok',
+        **summary,
+        'missingEmployees': sorted(missing_employees),
+    }
 
 
 @app.get('/api/attendance/{employee_id}/monthly/{year}/{month}')

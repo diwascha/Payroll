@@ -263,6 +263,26 @@
 
           <div class="panel">
             <header class="panel__header">
+              <h3>Import from Excel</h3>
+            </header>
+            <form id="attendance-import" class="form-grid" enctype="multipart/form-data">
+              <div class="field">
+                <label for="attendance-import-file">Upload workbook</label>
+                <input id="attendance-import-file" name="file" type="file" accept=".xlsx,.xlsm" required />
+              </div>
+              <div class="form-grid__actions">
+                <button class="btn btn--ghost" type="submit">Import attendance</button>
+              </div>
+              <div class="field field--span">
+                <p class="form-hint">
+                  Use monthly sheets that include columns such as Name, Employee ID/code, Date, Clock In, Clock Out, and Absent.
+                </p>
+              </div>
+            </form>
+          </div>
+
+          <div class="panel">
+            <header class="panel__header">
               <h3>Monthly attendance</h3>
             </header>
             <form id="attendance-query" class="attendance-query">
