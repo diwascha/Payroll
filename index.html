@@ -23,12 +23,24 @@
           </div>
         </div>
         <nav class="sidebar__nav" aria-label="Primary">
-          <button class="nav-item is-active" data-view="dashboard">Dashboard</button>
-          <button class="nav-item" data-view="employees">Employees</button>
-          <button class="nav-item" data-view="leaves">Leave Management</button>
-          <button class="nav-item" data-view="attendance">Attendance</button>
-          <button class="nav-item" data-view="payroll">Payroll</button>
-          <button class="nav-item" data-view="reports">Reports</button>
+          <button class="nav-item is-active" type="button" data-view="dashboard" aria-controls="view-dashboard">
+            Dashboard
+          </button>
+          <button class="nav-item" type="button" data-view="employees" aria-controls="view-employees">
+            Employees
+          </button>
+          <button class="nav-item" type="button" data-view="leaves" aria-controls="view-leaves">
+            Leave Management
+          </button>
+          <button class="nav-item" type="button" data-view="attendance" aria-controls="view-attendance">
+            Attendance
+          </button>
+          <button class="nav-item" type="button" data-view="payroll" aria-controls="view-payroll">
+            Payroll
+          </button>
+          <button class="nav-item" type="button" data-view="reports" aria-controls="view-reports">
+            Reports
+          </button>
         </nav>
         <div class="sidebar__hint">
           <p>Exports and PDF downloads are handled by the NovaHRMS API.</p>
@@ -57,7 +69,7 @@
           </div>
         </header>
 
-        <section class="view" data-view="dashboard">
+        <section class="view" data-view="dashboard" id="view-dashboard">
           <div class="grid grid--cards" id="dashboard-cards"></div>
           <div class="grid grid--split">
             <section class="panel">
@@ -75,7 +87,7 @@
           </div>
         </section>
 
-        <section class="view" data-view="employees" hidden>
+        <section class="view" data-view="employees" id="view-employees" hidden>
           <div class="panel">
             <header class="panel__header">
               <h3>Employee record</h3>
@@ -159,7 +171,7 @@
           </div>
         </section>
 
-        <section class="view" data-view="leaves" hidden>
+        <section class="view" data-view="leaves" id="view-leaves" hidden>
           <div class="panel">
             <header class="panel__header">
               <h3>Submit leave request</h3>
@@ -220,7 +232,7 @@
           </div>
         </section>
 
-        <section class="view" data-view="attendance" hidden>
+        <section class="view" data-view="attendance" id="view-attendance" hidden>
           <div class="panel">
             <header class="panel__header">
               <h3>Record attendance</h3>
@@ -278,7 +290,7 @@
           </div>
         </section>
 
-        <section class="view" data-view="payroll" hidden>
+        <section class="view" data-view="payroll" id="view-payroll" hidden>
           <div class="panel">
             <header class="panel__header">
               <h3>Payslip preview</h3>
@@ -294,7 +306,7 @@
           </div>
         </section>
 
-        <section class="view" data-view="reports" hidden>
+        <section class="view" data-view="reports" id="view-reports" hidden>
           <div class="panel">
             <header class="panel__header">
               <h3>Data exports</h3>

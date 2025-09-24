@@ -48,6 +48,8 @@ const selectors = {
   exportButtons: document.querySelectorAll('[data-export]'),
 };
 
+const validViews = new Set(Array.from(selectors.views).map((section) => section.dataset.view));
+
 const departmentTemplate = document.getElementById('department-template');
 
 async function apiFetch(endpoint, { method = 'GET', body, headers, parse = 'json' } = {}) {
@@ -102,15 +104,33 @@ function notify(message, type = 'info') {
   }, 3000);
 }
 
-function switchView(view) {
+function normalizeView(view) {
+  if (!view) return 'dashboard';
+  return validViews.has(view) ? view : 'dashboard';
+}
+
+function resolveViewFromHash() {
+  return normalizeView(window.location.hash.replace('#', ''));
+}
+
+function switchView(requestedView) {
+  const view = normalizeView(requestedView);
+  const viewChanged = state.activeView !== view;
   state.activeView = view;
+
   selectors.views.forEach((section) => {
     const isActive = section.dataset.view === view;
     section.hidden = !isActive;
   });
 
   selectors.navButtons.forEach((btn) => {
-    btn.classList.toggle('is-active', btn.dataset.view === view);
+    const isActive = btn.dataset.view === view;
+    btn.classList.toggle('is-active', isActive);
+    if (isActive) {
+      btn.setAttribute('aria-current', 'page');
+    } else {
+      btn.removeAttribute('aria-current');
+    }
   });
 
   if (selectors.mainSearch) {
@@ -121,13 +141,22 @@ function switchView(view) {
     selectors.dashboard.refresh.hidden = view !== 'dashboard';
   }
 
-  const copy = VIEW_COPY[view];
-  if (copy) {
-    selectors.viewTitle.textContent = copy.title;
-    selectors.viewDescription.textContent = copy.description;
-  }
+  const copy = VIEW_COPY[view] || { title: 'NovaHRMS', description: '' };
+  selectors.viewTitle.textContent = copy.title;
+  selectors.viewDescription.textContent = copy.description;
+  document.title = `NovaHRMS Control Center — ${copy.title}`;
 
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (viewChanged) {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+function navigate(view) {
+  const normalized = normalizeView(view);
+  switchView(normalized);
+  if (window.location.hash.replace('#', '') !== normalized) {
+    window.location.hash = normalized;
+  }
 }
 
 function buildEmployeeLookup() {
@@ -364,7 +393,7 @@ async function handleEmployeeActions(event) {
   if (!employee) return;
 
   if (action === 'edit') {
-    switchView('employees');
+    navigate('employees');
     fillEmployeeForm(employee);
     selectors.employees.form.mode.value = 'edit';
   }
@@ -652,7 +681,7 @@ async function exportDataset(dataset, format) {
 
 function bindEvents() {
   selectors.navButtons.forEach((button) => {
-    button.addEventListener('click', () => switchView(button.dataset.view));
+    button.addEventListener('click', () => navigate(button.dataset.view));
   });
 
   selectors.employees.form.addEventListener('submit', saveEmployee);
@@ -688,7 +717,7 @@ function bindEvents() {
   selectors.globalSearch.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
       const term = event.currentTarget.value.trim();
-      switchView('employees');
+      navigate('employees');
       selectors.employees.search.value = term;
       renderEmployeeTree(term);
       event.preventDefault();
@@ -709,7 +738,29 @@ async function init() {
   } catch (error) {
     notify(error.message, 'error');
   }
-  switchView('dashboard');
+  const initialView = resolveViewFromHash();
+  switchView(initialView);
+  if (window.location.hash.replace('#', '') !== initialView) {
+    if (typeof history.replaceState === 'function') {
+      const base = `${window.location.pathname}${window.location.search}`;
+      history.replaceState(null, '', `${base}#${initialView}`);
+    } else {
+      window.location.hash = initialView;
+    }
+  }
+  window.addEventListener('hashchange', () => {
+    const view = resolveViewFromHash();
+    if (window.location.hash.replace('#', '') !== view) {
+      if (typeof history.replaceState === 'function') {
+        const base = `${window.location.pathname}${window.location.search}`;
+        history.replaceState(null, '', `${base}#${view}`);
+      } else {
+        window.location.hash = view;
+        return;
+      }
+    }
+    switchView(view);
+  });
 }
 
 init();

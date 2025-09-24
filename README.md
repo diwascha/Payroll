@@ -34,6 +34,7 @@ NovaHRMS is a lightweight HR management console that ships with:
 ## Feature notes
 
 - **Employee directory** – Add, edit and delete employees. Records are grouped by department in a collapsible tree table and can be searched by name, ID or department.
+- **Dedicated workspaces** – Navigate via the sidebar or load views directly with URLs such as `/#employees`, `/#attendance` or `/#reports` for deep-linking between modules.
 - **Leave workflows** – Submit requests, approve/reject as an administrator and automatically adjust remaining balances. Requests cannot be approved when balances are insufficient.
 - **Attendance** – Capture daily attendance with working hour calculations. Quickly retrieve monthly logs per employee.
 - **Payroll** – View base pay, allowances and deductions, and export branded payslips in PDF using ReportLab.
