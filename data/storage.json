@@ -1,0 +1,88 @@
+{
+  "employees": [
+    {
+      "employeeId": "EMP-1001",
+      "firstName": "Aisha",
+      "lastName": "Khan",
+      "department": "Engineering",
+      "designation": "Senior Software Engineer",
+      "email": "aisha.khan@example.com",
+      "phone": "+1-202-555-0110",
+      "dateOfJoining": "2021-04-05",
+      "dateOfBirth": "1991-08-14",
+      "salary": 92000,
+      "allowances": 450,
+      "deductions": 150,
+      "status": "Active",
+      "leaveBalance": 14
+    },
+    {
+      "employeeId": "EMP-1002",
+      "firstName": "Dev",
+      "lastName": "Patel",
+      "department": "Finance",
+      "designation": "Payroll Specialist",
+      "email": "dev.patel@example.com",
+      "phone": "+1-202-555-0142",
+      "dateOfJoining": "2019-01-14",
+      "dateOfBirth": "1988-11-02",
+      "salary": 68000,
+      "allowances": 320,
+      "deductions": 110,
+      "status": "Active",
+      "leaveBalance": 9
+    },
+    {
+      "employeeId": "EMP-1003",
+      "firstName": "Lucia",
+      "lastName": "Fernandez",
+      "department": "Human Resources",
+      "designation": "HR Business Partner",
+      "email": "lucia.fernandez@example.com",
+      "phone": "+1-202-555-0189",
+      "dateOfJoining": "2020-07-22",
+      "dateOfBirth": "1990-05-28",
+      "salary": 76000,
+      "allowances": 280,
+      "deductions": 95,
+      "status": "Active",
+      "leaveBalance": 5
+    }
+  ],
+  "leaves": [
+    {
+      "id": "LV-0001",
+      "employeeId": "EMP-1003",
+      "type": "Annual Leave",
+      "startDate": "2024-04-12",
+      "endDate": "2024-04-15",
+      "reason": "Family event",
+      "status": "Approved",
+      "createdAt": "2024-03-30T09:30:00",
+      "days": 4
+    }
+  ],
+  "attendance": [
+    {
+      "employeeId": "EMP-1001",
+      "date": "2024-04-01",
+      "checkIn": "09:05",
+      "checkOut": "17:45",
+      "hoursWorked": 8.67
+    },
+    {
+      "employeeId": "EMP-1001",
+      "date": "2024-04-02",
+      "checkIn": "09:15",
+      "checkOut": "17:20",
+      "hoursWorked": 8.08
+    },
+    {
+      "employeeId": "EMP-1002",
+      "date": "2024-04-01",
+      "checkIn": "08:50",
+      "checkOut": "17:05",
+      "hoursWorked": 8.25
+    }
+  ]
+}
