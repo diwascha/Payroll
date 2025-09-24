@@ -15,6 +15,7 @@ const selectors = {
   viewTitle: document.getElementById('view-title'),
   viewDescription: document.getElementById('view-description'),
   views: document.querySelectorAll('.view'),
+  mainSearch: document.getElementById('main-search'),
   dashboard: {
     cards: document.getElementById('dashboard-cards'),
     leaveAlerts: document.getElementById('dashboard-leave-alerts'),
@@ -112,11 +113,21 @@ function switchView(view) {
     btn.classList.toggle('is-active', btn.dataset.view === view);
   });
 
+  if (selectors.mainSearch) {
+    selectors.mainSearch.hidden = view !== 'employees';
+  }
+
+  if (selectors.dashboard.refresh) {
+    selectors.dashboard.refresh.hidden = view !== 'dashboard';
+  }
+
   const copy = VIEW_COPY[view];
   if (copy) {
     selectors.viewTitle.textContent = copy.title;
     selectors.viewDescription.textContent = copy.description;
   }
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function buildEmployeeLookup() {
