@@ -19,6 +19,8 @@ NovaHRMS is a lightweight HR management console that ships with:
    pip install -r requirements.txt
    ```
 
+   The requirements bundle FastAPI, Uvicorn, ReportLab, OpenPyXL and `python-multipart` so file uploads and payroll exports work without extra installs.
+
 2. **Launch the API and static frontend**
 
    ```bash
