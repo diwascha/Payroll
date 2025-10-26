@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NovaHRMS Control Center</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar__brand">
+          <span class="sidebar__mark">NH</span>
+          <div>
+            <h1>NovaHRMS</h1>
+            <p>People & Payroll Suite</p>
+          </div>
+        </div>
+        <nav class="sidebar__nav" aria-label="Primary">
+          <button class="nav-item is-active" type="button" data-view="dashboard" aria-controls="view-dashboard">
+            Dashboard
+          </button>
+          <button class="nav-item" type="button" data-view="employees" aria-controls="view-employees">
+            Employees
+          </button>
+          <button class="nav-item" type="button" data-view="leaves" aria-controls="view-leaves">
+            Leave Management
+          </button>
+          <button class="nav-item" type="button" data-view="attendance" aria-controls="view-attendance">
+            Attendance
+          </button>
+          <button class="nav-item" type="button" data-view="payroll" aria-controls="view-payroll">
+            Payroll
+          </button>
+          <button class="nav-item" type="button" data-view="reports" aria-controls="view-reports">
+            Reports
+          </button>
+        </nav>
+        <div class="sidebar__hint">
+          <p>Exports and PDF downloads are handled by the NovaHRMS API.</p>
+          <p class="muted">Start the backend with <code>uvicorn server:app --reload</code>.</p>
+        </div>
+      </aside>
+
+      <main class="main" id="main">
+        <header class="main__header">
+          <div>
+            <h2 id="view-title">Dashboard</h2>
+            <p id="view-description">
+              Monitor employee headcount, utilisation and leave activity in one place.
+            </p>
+          </div>
+          <div class="main__actions">
+            <div id="main-search" hidden>
+              <input
+                id="global-search"
+                type="search"
+                placeholder="Search employees by name or ID"
+                aria-label="Search employees"
+              />
+            </div>
+            <button id="refresh-dashboard" class="btn btn--ghost">Refresh</button>
+          </div>
+        </header>
+
+        <section class="view" data-view="dashboard" id="view-dashboard">
+          <div class="grid grid--cards" id="dashboard-cards"></div>
+          <div class="grid grid--split">
+            <section class="panel">
+              <header class="panel__header">
+                <h3>Leave balance alerts</h3>
+              </header>
+              <ul id="dashboard-leave-alerts" class="list"></ul>
+            </section>
+            <section class="panel">
+              <header class="panel__header">
+                <h3>Upcoming birthdays</h3>
+              </header>
+              <ul id="dashboard-birthdays" class="list"></ul>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" data-view="employees" id="view-employees" hidden>
+          <div class="panel">
+            <header class="panel__header">
+              <h3>Employee record</h3>
+            </header>
+            <form id="employee-form" class="form-grid" novalidate>
+              <input type="hidden" name="mode" value="create" />
+              <div class="field">
+                <label for="emp-id">Employee ID/Code</label>
+                <input id="emp-id" name="employeeId" required />
+              </div>
+              <div class="field">
+                <label for="emp-first">First name</label>
+                <input id="emp-first" name="firstName" required />
+              </div>
+              <div class="field">
+                <label for="emp-last">Last name</label>
+                <input id="emp-last" name="lastName" required />
+              </div>
+              <div class="field">
+                <label for="emp-dept">Department</label>
+                <select id="emp-dept" name="department" required></select>
+              </div>
+              <div class="field">
+                <label for="emp-designation">Designation</label>
+                <input id="emp-designation" name="designation" required />
+              </div>
+              <div class="field">
+                <label for="emp-email">Email</label>
+                <input id="emp-email" name="email" type="email" required />
+              </div>
+              <div class="field">
+                <label for="emp-phone">Phone</label>
+                <input id="emp-phone" name="phone" type="tel" required />
+              </div>
+              <div class="field">
+                <label for="emp-joining">Date of joining</label>
+                <input id="emp-joining" name="dateOfJoining" type="date" required />
+              </div>
+              <div class="field">
+                <label for="emp-dob">Date of birth</label>
+                <input id="emp-dob" name="dateOfBirth" type="date" required />
+              </div>
+              <div class="field">
+                <label for="emp-salary">Base salary</label>
+                <input id="emp-salary" name="salary" type="number" step="0.01" required />
+              </div>
+              <div class="field">
+                <label for="emp-allowances">Allowances</label>
+                <input id="emp-allowances" name="allowances" type="number" step="0.01" min="0" value="0" />
+              </div>
+              <div class="field">
+                <label for="emp-deductions">Deductions</label>
+                <input id="emp-deductions" name="deductions" type="number" step="0.01" min="0" value="0" />
+              </div>
+              <div class="field">
+                <label for="emp-status">Status</label>
+                <select id="emp-status" name="status" required>
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="emp-leave-balance">Annual leave balance (days)</label>
+                <input id="emp-leave-balance" name="leaveBalance" type="number" min="0" value="24" />
+              </div>
+              <div class="form-grid__actions">
+                <button class="btn btn--primary" type="submit">Save employee</button>
+                <button class="btn btn--ghost" type="reset" id="employee-form-reset">Clear</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="panel">
+            <header class="panel__header">
+              <h3>Directory</h3>
+              <div class="panel__actions">
+                <input id="employee-search" type="search" placeholder="Search by name, ID or department" aria-label="Search employees" />
+              </div>
+            </header>
+            <div id="employee-tree" class="tree-table" role="tree"></div>
+          </div>
+        </section>
+
+        <section class="view" data-view="leaves" id="view-leaves" hidden>
+          <div class="panel">
+            <header class="panel__header">
+              <h3>Submit leave request</h3>
+            </header>
+            <form id="leave-form" class="form-grid" novalidate>
+              <div class="field">
+                <label for="leave-employee">Employee</label>
+                <select id="leave-employee" name="employeeId" required></select>
+              </div>
+              <div class="field">
+                <label for="leave-type">Leave type</label>
+                <select id="leave-type" name="type" required></select>
+              </div>
+              <div class="field">
+                <label for="leave-start">Start date</label>
+                <input id="leave-start" name="startDate" type="date" required />
+              </div>
+              <div class="field">
+                <label for="leave-end">End date</label>
+                <input id="leave-end" name="endDate" type="date" required />
+              </div>
+              <div class="field field--span">
+                <label for="leave-reason">Reason</label>
+                <textarea id="leave-reason" name="reason" rows="2" required></textarea>
+              </div>
+              <div class="form-grid__actions">
+                <button class="btn btn--primary" type="submit">Submit</button>
+                <button class="btn btn--ghost" type="reset">Clear</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="panel">
+            <header class="panel__header">
+              <h3>Leave requests</h3>
+              <div class="panel__actions">
+                <select id="leave-filter">
+                  <option value="all">All</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Approved">Approved</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+              </div>
+            </header>
+            <table class="table" id="leave-table">
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Type</th>
+                  <th>Period</th>
+                  <th>Status</th>
+                  <th>Balance</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="view" data-view="attendance" id="view-attendance" hidden>
+          <div class="panel">
+            <header class="panel__header">
+              <h3>Record attendance</h3>
+            </header>
+            <form id="attendance-form" class="form-grid" novalidate>
+              <div class="field">
+                <label for="attendance-employee">Employee</label>
+                <select id="attendance-employee" name="employeeId" required></select>
+              </div>
+              <div class="field">
+                <label for="attendance-date">Date</label>
+                <input id="attendance-date" name="date" type="date" required />
+              </div>
+              <div class="field">
+                <label for="attendance-checkin">Check-in</label>
+                <input id="attendance-checkin" name="checkIn" type="time" required />
+              </div>
+              <div class="field">
+                <label for="attendance-checkout">Check-out</label>
+                <input id="attendance-checkout" name="checkOut" type="time" required />
+              </div>
+              <div class="form-grid__actions">
+                <button class="btn btn--primary" type="submit">Record</button>
+                <button class="btn btn--ghost" type="reset">Clear</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="panel">
+            <header class="panel__header">
+              <h3>Import from Excel</h3>
+            </header>
+            <form id="attendance-import" class="form-grid" enctype="multipart/form-data">
+              <div class="field">
+                <label for="attendance-import-file">Upload workbook</label>
+                <input id="attendance-import-file" name="file" type="file" accept=".xlsx,.xlsm" required />
+              </div>
+              <div class="form-grid__actions">
+                <button class="btn btn--ghost" type="submit">Import attendance</button>
+              </div>
+              <div class="field field--span">
+                <p class="form-hint">
+                  Use monthly sheets that include columns such as Name, Employee ID/code, Date, Clock In, Clock Out, and Absent.
+                </p>
+              </div>
+            </form>
+          </div>
+
+          <div class="panel">
+            <header class="panel__header">
+              <h3>Monthly attendance</h3>
+            </header>
+            <form id="attendance-query" class="attendance-query">
+              <div class="field">
+                <label for="attendance-query-employee">Employee</label>
+                <select id="attendance-query-employee" required></select>
+              </div>
+              <div class="field">
+                <label for="attendance-query-month">Month</label>
+                <input id="attendance-query-month" type="month" required />
+              </div>
+              <button class="btn btn--ghost" type="submit">View</button>
+            </form>
+            <table class="table" id="attendance-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Check-in</th>
+                  <th>Check-out</th>
+                  <th>Hours worked</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="view" data-view="payroll" id="view-payroll" hidden>
+          <div class="panel">
+            <header class="panel__header">
+              <h3>Payslip preview</h3>
+            </header>
+            <div class="payroll-controls">
+              <div class="field">
+                <label for="payroll-employee">Employee</label>
+                <select id="payroll-employee"></select>
+              </div>
+              <button id="download-payslip" class="btn btn--primary" disabled>Download payslip (PDF)</button>
+            </div>
+            <div id="payroll-summary" class="payroll-summary"></div>
+          </div>
+        </section>
+
+        <section class="view" data-view="reports" id="view-reports" hidden>
+          <div class="panel">
+            <header class="panel__header">
+              <h3>Data exports</h3>
+            </header>
+            <div class="export-grid">
+              <div>
+                <h4>Employees</h4>
+                <button class="btn btn--ghost" data-export="employees" data-format="csv">Download CSV</button>
+                <button class="btn btn--ghost" data-export="employees" data-format="xlsx">Download Excel</button>
+              </div>
+              <div>
+                <h4>Leave requests</h4>
+                <button class="btn btn--ghost" data-export="leaves" data-format="csv">Download CSV</button>
+                <button class="btn btn--ghost" data-export="leaves" data-format="xlsx">Download Excel</button>
+              </div>
+              <div>
+                <h4>Attendance</h4>
+                <button class="btn btn--ghost" data-export="attendance" data-format="csv">Download CSV</button>
+                <button class="btn btn--ghost" data-export="attendance" data-format="xlsx">Download Excel</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <template id="department-template">
+      <details class="tree-table__node" open>
+        <summary role="treeitem"></summary>
+        <div class="tree-table__content"></div>
+      </details>
+    </template>
+
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>
